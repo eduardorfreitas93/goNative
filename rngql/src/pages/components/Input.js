@@ -1,8 +1,10 @@
 import React, { Component } from 'react';
+import { graphql } from 'react-apollo';
+import gql from 'graphql-tag';
 
 import { View, TextInput, TouchableOpacity, Text, StyleSheet } from 'react-native';
 
-export default class Input extends Component {
+class Input extends Component {
     state = {
         message: ''
     };
@@ -14,22 +16,24 @@ export default class Input extends Component {
         if (message.length > 0) {
             const newMessage = await this.props.addMessage({
                 author,
-                message,
-            });
+                message
+            })
         }
 
-        this.setState({ message: '' });
+        this.setState({message: ''});
     };
 
     render() {
         return (
-            <View style={styles.inputContainer}>
+            <View style={ styles.inputContainer }>
                 <TextInput
-                    style={styles.input}
+                    style={ styles.input }
                     underlineColorAndroid="rgba(0, 0, 0, 0)"
+                    value={ this.state.message }
+                    onChangeText={ message => this.setState({ message }) }
                 />
-                <TouchableOpacity activeOpacity={0.6} onPress={()=>{}}>
-                    <Text style={styles.button}>Enviar</Text>
+                <TouchableOpacity activeOpacity={ 0.6 } onPress={ this.handleAddMessage }>
+                    <Text style={ styles.button }>Enviar</Text>
                 </TouchableOpacity>
             </View>
         );
@@ -67,3 +71,28 @@ const styles = StyleSheet.create({
         fontSize: 14,
     },
 });
+
+const messageMutation = gql`
+    mutation(
+        $author: String!
+        $message: String!
+    ) {
+        createMessage(
+            from: $author
+            message: $message
+        ) {
+            id
+            from
+            message
+        }
+    }
+`;
+
+export default graphql(messageMutation, {
+    props: ({ ownProps, mutate }) => ({
+        addMessage: ({ author, message }) => mutate({
+            variables: {author, message},
+            update: ownProps.onAddMessage
+        }),
+    })
+})(Input);

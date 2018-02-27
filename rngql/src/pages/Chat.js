@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { Component } from 'react';
 import {
     View,
     Text,
@@ -7,38 +7,108 @@ import {
     Platform,
     Dimensions,
     StatusBar,
-    KeyboardAvoidingView
+    KeyboardAvoidingView,
+    ActivityIndicator,
 } from 'react-native';
+import { graphql } from 'react-apollo';
+import gql from 'graphql-tag';
 
 import Input from './components/Input';
 
 StatusBar.setBarStyle('light-content');
 
-const Chat = () => (
-    <KeyboardAvoidingView
-        style={ styles.container }
-        behavior={Platform.OS === 'ios' ? 'padding' : null}
-        keyboardShouldPersistTaps="never"
-    >
-        <ScrollView contentContainerStyle={ styles.conversation }>
-            <View style={[styles.bubble, styles['bubble-left']]}>
-                <Text style={ styles.author }>Eduardo</Text>
-                <Text style={ styles.message }>Ola</Text>
-            </View>
+const author = 'Eduardo';
 
-            <View style={[styles.bubble, styles['bubble-right']]}>
-                <Text style={ styles.author }>Eduardo</Text>
-                <Text style={ styles.message }>Ola</Text>
-            </View>
+class Chat extends Component {
 
-            <View style={[styles.bubble, styles['bubble-left']]}>
-                <Text style={ styles.author }>Eduardo</Text>
-                <Text style={ styles.message }>Ola</Text>
+    componentDidMount() {
+        this.props.conversation.subscribeToMore({
+            document: gql`
+                subscription onMessageAdded($author: String!) {
+                    Message(filter: {
+                        mutation_in: [CREATED]
+                        node: {
+                            from_not: $author
+                        }
+                    }) {
+                        node {
+                            id
+                            from
+                            message
+                        }
+                    }
+                }
+            `,
+            variables: {
+                author
+            },
+            updateQuery: (prev, { subscriptionData }) => {
+                if (subscriptionData.data['Message']) return prev;
+
+                const newItem = subscriptionData.data['Message'].node;
+
+                return { ...prev, allMessages: [ ...prev.allMessages, newItem ] };
+            }
+        })
+    }
+
+    componentDidUpdate() {
+        setTimeout(() => {
+            this._scrollView.scrollToEnd({ animated: false });
+        }, 0);
+    }
+
+    handleAddMessage = (proxy, { data: { createMessage } }) => {
+        const data = proxy.readQuery({
+            query: conversationQuery,
+        });
+
+        data.allMessages.push(createMessage);
+
+        proxy.writeQuery({
+            query: conversationQuery,
+            data
+        });
+    };
+
+    renderChat = () => (
+        this.props.conversation.allMessages.map(item => (
+            <View
+                key={ item.id }
+                style={ [
+                    styles.bubble,
+                    item.from === author
+                        ? styles['bubble-right']
+                        : styles['bubble-left']
+                ] }>
+                <Text style={ styles.author }>{ item.from }</Text>
+                <Text style={ styles.message }>{ item.message }</Text>
             </View>
-        </ScrollView>
-        <Input />
-    </KeyboardAvoidingView>
-);
+        ))
+    );
+
+    render() {
+        return (
+            <KeyboardAvoidingView
+                style={ styles.container }
+                behavior={ Platform.OS === 'ios' ? 'padding' : null }
+            >
+                <ScrollView
+                    contentContainerStyle={ styles.conversation }
+                    keyboardShouldPersistTaps="never"
+                    ref={ scrollView => this._scrollView = scrollView }
+                >
+
+                    { this.props.conversation.loading
+                        ? <ActivityIndicator style={ styles.loading } color="#FFF"/>
+                        : this.renderChat() }
+
+                </ScrollView>
+                <Input author={ author } onAddMessage={ this.handleAddMessage }/>
+            </KeyboardAvoidingView>
+        )
+    }
+}
 
 const { width } = Dimensions.get('window');
 
@@ -93,4 +163,18 @@ const styles = StyleSheet.create({
     }
 });
 
-export default Chat;
+const conversationQuery = gql`
+    query {
+        allMessages(
+            orderBy: createdAt_ASC
+        ) {
+            id
+            from
+            message
+        }
+    }
+`;
+
+export default graphql(conversationQuery, {
+    name: 'conversation'
+})(Chat);
