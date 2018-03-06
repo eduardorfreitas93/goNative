@@ -1,4 +1,5 @@
 import React, { Component } from 'react';
+import PropTypes from 'prop-types';
 
 import {
   SafeAreaView,
@@ -9,16 +10,38 @@ import {
   StatusBar
 } from 'react-native';
 
+import { connect } from 'react-redux';
+import { bindActionCreators } from 'redux';
+import * as FavoritesActions from '../../store/actions/favorites';
+
 import styles from './styles';
 import Favorites from '../favorites';
 
-export default class Main extends Component {
+class Main extends Component {
   static navigationOptions = {
     header: null
   };
 
+  static propTypes = {
+    navigation: PropTypes.shape({
+      navigate: PropTypes.func,
+    }).isRequired,
+    addFavoriteRequest: PropTypes.func.isRequired,
+    favoritesCount: PropTypes.number.isRequired,
+  };
+
+  state = {
+    repoNameInput: '',
+  };
+
   navigateToFavorites = () => {
     this.props.navigation.navigate('Favorites');
+  };
+
+  addRepository = () => {
+    if (!this.state.repoNameInput.length) return;
+
+    this.props.addFavoriteRequest(this.state.repoNameInput);
   };
 
   render() {
@@ -37,12 +60,13 @@ export default class Main extends Component {
               autoCorrect={ false }
               placeholder="Usuário/Repo"
               underlineColorAndroid="transparent"
+              value={ this.state.repoNameInput }
+              onChangeText={ repoNameInput => this.setState({ repoNameInput }) }
             />
 
             <TouchableOpacity
               style={ styles.button }
-              onPress={ () => {
-              } }
+              onPress={ this.addRepository }
               activeOpacity={ 0.6 }
             >
               <Text style={ styles.buttonText }>Adicionar aos favoritos</Text>
@@ -51,11 +75,20 @@ export default class Main extends Component {
         </View>
 
         <View style={ styles.footer }>
-          <TouchableOpacity onPress={this.navigateToFavorites}>
-            <Text style={ styles.footerLink }>Meus favoritos (1)</Text>
+          <TouchableOpacity onPress={ this.navigateToFavorites }>
+            <Text style={ styles.footerLink }>Meus favoritos ({this.props.favoritesCount})</Text>
           </TouchableOpacity>
         </View>
       </SafeAreaView>
     );
   }
 }
+
+const mapStateToProps = state => ({
+  favoritesCount: state.favorites.length,
+});
+
+const mapDispatchToProps = dispatch =>
+  bindActionCreators(FavoritesActions, dispatch);
+
+export default connect(mapStateToProps, mapDispatchToProps)(Main);

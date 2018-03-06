@@ -10,7 +10,7 @@ const FavoriteItem = ({favorite: {name, owner, description}}) => (
     <Image style={styles.avatar} source={{uri: owner.avatar_url}} />
     <View style={styles.info}>
       <Text style={styles.title}>{name}</Text>
-      <Text numberOfLine={2} style={styles.description}>{description}</Text>
+      <Text numberOfLines={2} style={styles.description}>{description}</Text>
     </View>
   </View>
 );
