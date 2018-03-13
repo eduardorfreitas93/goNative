@@ -13,7 +13,7 @@ import {
 
 import { connect } from 'react-redux';
 import { bindActionCreators } from 'redux';
-import * as FavoritesActions from '../../store/actions/favorites';
+import { Creators as FavoriteActions } from '../../store/ducks/favorites';
 
 import styles from './styles';
 import Favorites from '../favorites';
@@ -99,6 +99,6 @@ const mapStateToProps = state => ({
 });
 
 const mapDispatchToProps = dispatch =>
-  bindActionCreators(FavoritesActions, dispatch);
+  bindActionCreators(FavoriteActions, dispatch);
 
 export default connect(mapStateToProps, mapDispatchToProps)(Main);
