@@ -1,10 +1,14 @@
 import { call, put } from 'redux-saga/effects';
 import api from '../../services/api';
 
-import { addFavoriteSuccess } from '../actions/favorites';
+import { addFavoriteSuccess, addFavoriteError } from '../actions/favorites';
 
 export function* addFavoriteRequest(action) {
-  const response = yield call(api.get, `/repos/${action.payload.repoName}`);
+  try {
+    const response = yield call(api.get, `/repos/${action.payload.repoName}`);
 
-  yield put(addFavoriteSuccess(response));
+    yield put(addFavoriteSuccess(response));
+  } catch (err) {
+    yield put(addFavoriteError('Repo não existe'));
+  }
 }

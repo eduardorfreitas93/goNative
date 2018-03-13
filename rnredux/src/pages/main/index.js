@@ -7,7 +7,8 @@ import {
   Text,
   TextInput,
   TouchableOpacity,
-  StatusBar
+  StatusBar,
+  ActivityIndicator,
 } from 'react-native';
 
 import { connect } from 'react-redux';
@@ -27,7 +28,10 @@ class Main extends Component {
       navigate: PropTypes.func,
     }).isRequired,
     addFavoriteRequest: PropTypes.func.isRequired,
-    favoritesCount: PropTypes.number.isRequired,
+    favorites: PropTypes.shape({
+      data: PropTypes.arrayOf(PropTypes.shape),
+      errorOnAdd: PropTypes.oneOfType([null, PropTypes.string]),
+    }).isRequired,
   };
 
   state = {
@@ -54,6 +58,10 @@ class Main extends Component {
           <Text style={ styles.description }>Comece adicionando algum repositório</Text>
 
           <View style={ styles.form }>
+            { !!this.props.favorites.errorOnAdd && (
+              <Text style={styles.error}>{ this.props.favorites.errorOnAdd }</Text>
+            ) }
+
             <TextInput
               style={ styles.input }
               autoCaptalize="none"
@@ -69,14 +77,16 @@ class Main extends Component {
               onPress={ this.addRepository }
               activeOpacity={ 0.6 }
             >
-              <Text style={ styles.buttonText }>Adicionar aos favoritos</Text>
+              { this.props.favorites.loading
+                ? <ActivityIndicator size="small" color={styles.loading.color} />
+                : <Text style={ styles.buttonText }>Adicionar aos favoritos</Text> }
             </TouchableOpacity>
           </View>
         </View>
 
         <View style={ styles.footer }>
           <TouchableOpacity onPress={ this.navigateToFavorites }>
-            <Text style={ styles.footerLink }>Meus favoritos ({this.props.favoritesCount})</Text>
+            <Text style={ styles.footerLink }>Meus favoritos ({this.props.favorites.data.length})</Text>
           </TouchableOpacity>
         </View>
       </SafeAreaView>
@@ -85,7 +95,7 @@ class Main extends Component {
 }
 
 const mapStateToProps = state => ({
-  favoritesCount: state.favorites.length,
+  favorites: state.favorites,
 });
 
 const mapDispatchToProps = dispatch =>
