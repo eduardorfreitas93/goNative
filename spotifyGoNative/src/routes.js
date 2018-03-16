@@ -8,7 +8,7 @@ import Search from 'pages/search';
 const Routes = StackNavigator({
   Main: { screen: Main },
   Search: { screen: Search },
-  Algum: { screen: Album },
+  Album: { screen: Album },
 }, {
   navigationOptions: {
     headerStyle: {
